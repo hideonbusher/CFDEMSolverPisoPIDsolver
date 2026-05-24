@@ -1,0 +1,3 @@
+cfdemSolverPisoSedimentTHUv4Explicit.C
+
+EXE=$(CFDEM_APP_DIR)/cfdemSolverPisoSedimentTHUv4Explicit

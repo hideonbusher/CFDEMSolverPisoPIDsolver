@@ -1,0 +1,89 @@
+echo both
+#-------------Liu--------------------
+variable dp equal 0.001
+variable rp equal v_dp/2
+# general setup
+
+atom_style	granular
+atom_modify	map array sort 0 0
+communicate	single vel yes
+
+boundary	p p m
+newton		off
+units		si 
+
+neighbor	0.0001 bin
+			
+neigh_modify	delay 0
+
+timestep	1e-5 
+read_restart ../DEM/restart/restart.sample       
+#fix		gravi all gravity 9.81 vector 0.44464 0.0 -0.89571
+fix		gravi all gravity 5.96 vector 0 0 -1
+# material properties required for new pair styles
+fix 	m1 all property/global youngsModulus peratomtype 5e7 5e7 5e7 5e7 1e9  #type 1-Ep 2-Eb 3-Ew in order
+fix 	m2 all property/global poissonsRatio peratomtype 0.24 0.24 0.24 0.24 0.24
+fix 	m3 all property/global coefficientRestitution peratomtypepair 5 &
+		0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97  
+fix 	m4 all property/global coefficientFriction peratomtypepair 5 &
+		0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16    
+#fix 	m5 all property/global coefficientRollingFriction peratomtypepair 4 &
+#		0 0 0 0
+#LIGGGHTS_help fix id all property/global coefficientRestitution peratomtypepair n_atomtypes value_11 value_12 13 14.. value_21 value_22 ..23 24.... 
+
+run 0
+region dels block 0 0.108 0 0.036 0.00457 0.023 units box  #0.0438-0.003(dingbu)+0.003(dibubuchang)=org
+delete_atoms region dels
+
+# pair style
+pair_style 	gran model hertz tangential history #rolling_friction cdt
+pair_coeff	* *
+
+# walls
+
+#fix	xgate1 all wall/gran model hertz tangential history primitive type 5 xplane 0 
+#fix	xgate2 all wall/gran model hertz tangential history primitive type 5 xplane 0.0069
+#fix	ygate1 all wall/gran model hertz tangential history primitive type 5 yplane 0 
+#fix	ygate2 all wall/gran model hertz tangential history primitive type 5 yplane 0.0105
+fix	zgate1 all wall/gran model hertz tangential history primitive type 5 zplane -0.001
+#fix	zgate2 all wall/gran model hertz tangential history primitive type 4 zplane 0.0032 
+
+group           base type 1
+group		flow type 2
+fix	glue base move linear 0 0 0 units box
+
+
+fix     	cfd all couple/cfd couple_every 100 mpi
+fix     	cfd2 all couple/cfd/force
+# integr nve
+
+fix		integr flow nve/sphere #/addedmass Cadd 2 rhoFluid 1000
+
+# screen output
+compute		comflow flow com
+compute	stress all stress/atom pair
+thermo_style	custom step atoms ke c_comflow[1] c_comflow[3]
+thermo		1000
+thermo_modify	lost ignore norm no
+# compute_modify	thermo_temp dynamic yes
+
+compute		2 all pair/gran/local pos force id 
+dump		dmp1f flow local 10000 postforcechain/dump*.force- c_2[1] c_2[2] c_2[3] c_2[4] c_2[5] c_2[6] c_2[7] c_2[8] c_2[9] c_2[10] c_2[11] c_2[12]
+
+
+
+# dump output
+dump	dump1 base custom 100000 postflow/dump.flowbase id type x y z radius
+dump	dump2 flow custom 10000 postflow/dump.flowflow id type x y z vx vy vz fx fy fz radius omegax omegay omegaz c_stress[1] c_stress[2] c_stress[3] c_stress[4] c_stress[5] c_stress[6]
+
+
+
+# main run
+#compute 	co flow contact/atom	
+#dump		dum flow custom ${writestep} ../DEM/post/dump.sediment id type x y z radius vx vy vz c_co
+ 
+
+reset_timestep	0
+run 0
+# restart
+write_restart   restart/restart.sample

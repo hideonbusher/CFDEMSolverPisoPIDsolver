@@ -1,0 +1,119 @@
+echo both
+#-------------Liu--------------------
+variable dp equal 0.001
+variable rp equal v_dp/2
+# general setup
+
+atom_style	granular
+atom_modify	map array sort 0 0
+communicate	single vel yes
+
+boundary	p p m
+newton		off
+units		si
+
+#processors	5 1 1
+
+region		reg block 0 0.108 0 0.036 -0.001 0.023 units box  
+create_box	5 reg       
+
+neighbor	0.0001 bin
+			
+neigh_modify	delay 0
+
+timestep	1e-5         
+#fix		gravi all gravity 9.81 vector 0.44464 0.0 -0.89571
+fix		gravi all gravity 1 vector 0 0 -1
+# material properties required for new pair styles
+fix 	m1 all property/global youngsModulus peratomtype 5e7 5e7 5e7 5e7 1e9  #type 1-Ep 2-Eb 3-Ew in order
+fix 	m2 all property/global poissonsRatio peratomtype 0.24 0.24 0.24 0.24 0.24
+fix 	m3 all property/global coefficientRestitution peratomtypepair 5 &
+		0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97 0.97  
+fix 	m4 all property/global coefficientFriction peratomtypepair 5 &
+		0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16 0.16    
+#fix 	m5 all property/global coefficientRollingFriction peratomtypepair 4 &
+#		0 0 0 0
+#LIGGGHTS_help fix id all property/global coefficientRestitution peratomtypepair n_atomtypes value_11 value_12 13 14.. value_21 value_22 ..23 24.... 
+
+# pair style
+pair_style 	gran model hertz tangential history #rolling_friction cdt
+pair_coeff	* *
+
+# walls
+
+#fix	xgate1 all wall/gran model hertz tangential history primitive type 5 xplane 0 
+#fix	xgate2 all wall/gran model hertz tangential history primitive type 5 xplane 0.0069
+#fix	ygate1 all wall/gran model hertz tangential history primitive type 5 yplane 0 
+#fix	ygate2 all wall/gran model hertz tangential history primitive type 5 yplane 0.0105
+fix	zgate1 all wall/gran model hertz tangential history primitive type 5 zplane -0.001
+#fix	zgate2 all wall/gran model hertz tangential history primitive type 4 zplane 0.0032 
+
+#==========BASE=================
+region		basereg block 0 0.108 0 0.036 -0.001 0 units box
+fix		pts1 all particletemplate/sphere 15485863 atom_type 1 density constant 2550 radius gaussian 0.0005 0.00005
+fix		pts11 all particletemplate/sphere 32452867 atom_type 1 density constant 2550 radius gaussian 0.0006 0.00006
+fix		pts111 all particletemplate/sphere 49979687 atom_type 1 density constant 2550 radius gaussian 0.0004 0.00004
+fix		pdd1 all particledistribution/discrete 32452843 3 pts1 0.5 pts11 0.4 pts111 0.1 
+
+group		base region basereg
+
+fix		insbase base insert/pack seed 86028157 distributiontemplate pdd1 &
+			maxattempt 200 insert_every once overlapcheck yes all_in no vel constant 0. 0. 0. &
+			region basereg volumefraction_region 0.17  #all in no
+
+#group enlarge1 id 10:1110:10
+#group enlarge2 id 5:1105:5
+#group enlarge3 id 3:1101:3
+#==========BASE=================
+
+
+#group           base type 1
+#set		group base diameter ${dpp} density 2550
+fix	glue base move linear 0 0 0 units box
+#==========BASE=================
+
+#============particle distributions===============
+# 15485863, 15485867, 32452843, 32452867, 49979687, 49979693, 67867967, 67867979, 86028121, 86028157
+# next two fix command is a twin the first one pts is to define the particle template (density radius) the second one pdd is to discrete the particles as some distributions
+fix		pts2 all particletemplate/sphere 32452843 atom_type 2	density constant 2550 radius constant 0.0005
+group		flow type 2
+fix		pdd2 all particledistribution/discrete 15485863 1 pts2 1
+
+# integr nve
+fix		integr flow nve/sphere #new11
+
+# screen output
+compute		comflow flow com
+thermo_style	custom step atoms ke c_comflow[1] c_comflow[3]
+thermo		1000
+thermo_modify	lost ignore norm no
+# compute_modify	thermo_temp dynamic yes
+
+# dump output
+dump	dump1 base custom 1000 postsample/dump.samplebase id type x y z radius
+dump	dump2 flow custom 1000 postsample/dump.sampleflow id type x y z vx vy vz fx fy fz radius omegax omegay omegaz
+
+# pour particles 0 0.25 0 0.0065 0 0.08
+region		pour block 0.0 0.108 0 0.036 0.01 0.023 units box
+fix		ins1 flow insert/pack &
+		seed 15485867 distributiontemplate pdd2 & 
+		insert_every once overlapcheck yes  all_in yes particles_in_region 20000 region pour  
+		#volumnfraction of particle calculate by square dp*dp
+		#nparticles ${np} particlerate ${rate} insert_every ${insertevery} region pour ntry_mc 10000
+run		50000
+fix		ins2 flow insert/pack &
+		seed 15485867 distributiontemplate pdd2 & 
+		insert_every once overlapcheck yes  all_in yes particles_in_region 25000 region pour  
+		#volumnfraction of particle calculate by square dp*dp
+		#nparticles ${np} particlerate ${rate} insert_every ${insertevery} region pour ntry_mc 10000
+run		50000
+# main run
+#compute 	co flow contact/atom	
+#dump		dum flow custom ${writestep} ../DEM/post/dump.sediment id type x y z radius vx vy vz c_co
+ 
+
+reset_timestep	0
+run 		0
+
+# restart
+write_restart   restart/restart.sample

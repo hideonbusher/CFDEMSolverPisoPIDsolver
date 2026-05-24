@@ -1,0 +1,96 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.6                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     cfdemSolverPisoavatest;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         10;
+
+deltaT          1e-3;
+
+writeControl    adjustableRunTime;
+
+writeInterval   0.1;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression uncompressed;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable yes;
+
+adjustTimeStep  no;
+
+maxCo           1;
+
+maxDeltaT       1;
+
+gravity
+{
+    x 0.0;
+    y 0.0;
+    z 0.0;
+};
+
+drive
+{
+    x 0.4;
+    y 0.0;
+    z 0.0;
+};
+
+flowControl
+{
+    Q_target 0.000335;  //m^3!!
+    Kp       6000;
+    Ki       3000; 
+    Kd       0;
+    max_integral  10; 
+x_plane       .00075000000000000000;
+}
+
+
+
+
+
+
+// ************************************************************************* //
+
+functions
+{
+    gradU
+    {
+        type              grad;
+        functionObjectLibs ("libfieldFunctionObjects.so");
+        enabled           true;
+        outputControl     timeStep;
+        outputInterval    10000;
+        field             U;
+    }
+}

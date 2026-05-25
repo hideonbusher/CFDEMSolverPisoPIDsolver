@@ -1,0 +1,104 @@
+echo both
+#-------------Liu--------------------
+variable dp equal 0.00335
+variable rp equal v_dp/2
+# general setup
+
+atom_style	granular
+atom_modify	map array sort 0 0
+communicate	single vel yes
+
+boundary	p p m
+newton		off
+units		si
+
+processors	1 2 2
+
+region		reg block 0 0.134 0 0.088 0 0.03 units box  
+create_box	5 reg       
+
+neighbor	0.0003 bin
+			
+neigh_modify	delay 0
+
+timestep	1e-5         
+#fix		gravi all gravity 9.81 vector 0.44464 0.0 -0.89571
+fix		gravi all gravity 5.99 vector 0 0 -1
+# material properties required for new pair styles
+fix 	m1 all property/global youngsModulus peratomtype 5e6 5e6 5e6 5e6 1e9  #type 1-Ep 2-Eb 3-Ew in order
+fix 	m2 all property/global poissonsRatio peratomtype 0.24 0.24 0.24 0.24 0.24
+fix 	m3 all property/global coefficientRestitution peratomtypepair 5 &
+		0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8   
+fix 	m4 all property/global coefficientFriction peratomtypepair 5 &
+		0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4    
+fix 	m5 all property/global coefficientRollingFriction peratomtypepair 5 &
+		0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2
+#LIGGGHTS_help fix id all property/global coefficientRestitution peratomtypepair n_atomtypes value_11 value_12 13 14.. value_21 value_22 ..23 24.... 
+
+# pair style
+pair_style 	gran model hertz tangential history #rolling_friction cdt
+pair_coeff	* *
+
+# walls
+
+#fix	xgate1 all wall/gran model hertz tangential history primitive type 5 xplane 0 
+#fix	xgate2 all wall/gran model hertz tangential history primitive type 5 xplane 0.0069
+fix	ygate1 all wall/gran model hertz tangential history primitive type 5 yplane 0 
+fix	ygate2 all wall/gran model hertz tangential history primitive type 5 yplane 0.088
+fix	zgate1 all wall/gran model hertz tangential history primitive type 5 zplane 0
+#fix	zgate2 all wall/gran model hertz tangential history primitive type 4 zplane 0.0032 
+
+#==========BASE=================
+#==========BASE=================
+variable	dpp equal v_dp
+variable	rpp equal v_rp
+variable	x0 equal v_rpp
+variable	y0 equal v_rpp
+variable	dx equal v_dpp
+variable	dy equal v_dpp
+
+     label	    loopi
+     variable	    i loop 100
+          label		loopj
+          variable	j loop 100
+               variable	x1 equal v_x0+(v_i-1)*v_dp
+               variable	y1 equal v_y0+(v_j-1)*v_dp
+               create_atoms	1 single ${x1} ${y1} ${rpp} units box
+          next		j
+          jump		SELF loopj
+     next		i
+     jump		SELF loopi
+group           base type 1
+set		group base diameter 0.00335 density 2550
+fix	glue base move linear 0 0 0 units box
+
+#==========BASE=================
+#============particle distributions===============
+# 15485863, 15485867, 32452843, 32452867, 49979687, 49979693, 67867967, 67867979, 86028121, 86028157
+# next two fix command is a twin the first one pts is to define the particle template (density radius) the second one pdd is to discrete the particles as some distributions
+
+# integr nve
+fix		integr all nve/sphere #new11
+
+# screen output
+thermo_style	custom step atoms ke 
+thermo		1000
+thermo_modify	lost ignore norm no
+# compute_modify	thermo_temp dynamic yes
+
+# dump output
+dump	dump1 base custom 10000 postsample/dump.samplebase id type x y z radius
+
+# pour particles 0 0.071 0 0.2 0 0.195
+
+
+# main run
+#compute 	co flow contact/atom	
+#dump		dum flow custom ${writestep} ../DEM/post/dump.sediment id type x y z radius vx vy vz c_co
+ 
+
+reset_timestep	0
+run 		10000
+
+# restart
+write_restart   restart/restart.sample

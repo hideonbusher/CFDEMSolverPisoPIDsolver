@@ -1,0 +1,373 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.4                                   |
+|   \\  /    A nd           | Web:      http://www.openfoam.org               |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+
+FoamFile
+{
+    version         2.0;
+    format          ascii;
+
+    root            "";
+    case            "";
+    instance        "";
+    local           "";
+
+    class           dictionary;
+    object          couplingProperties;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+//===========================================================================//
+// sub-models & settings
+modelType A; // A or B
+
+couplingInterval 10;
+
+voidFractionModel divided;//divided;//centre;//bigParticle;//
+
+locateModel engine;//turboEngineM2M;//
+
+meshMotionModel noMeshMotion;
+
+//regionModel allRegion; /////?may be in old verion CFDEM?
+
+IOModel basicIO; //trackIO; // 
+
+probeModel off;
+
+dataExchangeModel twoWayMPI;//M2M;//
+
+averagingModel dense;//dilute;//
+
+clockModel standardClock;//off;
+
+smoothingModel off;// localPSizeDiffSmoothing;// constDiffSmoothing; //
+
+//useDDTvoidfraction;
+
+forceModels
+(
+    //GidaspowDrag
+    //BeetstraDrag
+    //DiFeliceDrag
+	//AbrahamNew
+	//newlucy
+	//CGlucy2D
+    CGlucy15Dgidaspow
+    gradPForce
+    viscForce
+    //KochHillDrag
+    //DEMbasedDrag
+    //RongDrag
+    //Archimedes
+    //volWeightedAverage
+    //totalMomentumExchange
+    //particleCellVolume
+    //fieldTimeAverage
+    //fieldStore
+    //fieldVolWeighted
+    //MeiLiftCorrected
+    //TurbSusCG
+);
+
+momCoupleModels
+(
+    implicitCouple
+);
+
+//turbulenceModelType RASProperties;//LESProperties;//OFversion24x
+turbulenceModelType turbulenceProperties;//LESProperties;//OFversion30x
+
+//===========================================================================//
+// sub-model properties
+CGProps
+{
+    alphaMin 0.1;
+	//interpolatoin;
+    scaleUpVol 1.0;
+	//verbose;
+meshx 208;
+meshy 52;
+meshz 32;
+decx 1;
+decy 2;
+decz 2;
+TopologyAccel true;
+periodicx true;
+periodicy false;
+}
+bigParticleProps
+{
+    maxCellsPerParticle 2000;
+    alphaMin 0.1;
+    weight 1;
+    porosity        5;
+}
+
+TurbSusCGProps
+{
+    verbose true;
+    velFieldName "U";
+    voidfractionFieldName "voidfraction";
+    granVelFieldName "Us";
+    nutFieldName "nut";
+    interpolation false;
+    phi 1;
+Sc 0.7;
+}
+MeiLiftCorrectedProps
+{
+    velFieldName "U";
+    densityFieldName "rho";
+    treatForceExplicit false;
+}
+CGdenseProps
+{
+    alphaMin 0.1;
+	//interpolatoin;
+    scaleUpVol 1.0;
+	//verbose;
+meshx 208;
+meshy 52;
+meshz 32;
+decx 1;
+decy 2;
+decz 2;
+}
+
+PBCGFiMPIProWxyzProps
+{
+    alphaMin 0.1;
+	//interpolatoin;
+    scaleUpVol 1.0;
+	//verbose;
+}
+
+CGlucy15DgidaspowProps
+{
+    verbose true;
+    velFieldName "U";
+    voidfractionFieldName "voidfraction";
+    granVelFieldName "Us";
+    //interpolation true;
+    phi 1;
+}
+
+implicitCoupleProps
+{
+    velFieldName "U";
+    granVelFieldName "Us";
+    voidfractionFieldName "voidfraction";
+}
+
+AbrahamNewProps
+{
+    //verbose true;
+    velFieldName "U";
+    voidfractionFieldName "voidfraction";
+    granVelFieldName "Us";
+    interpolation true;
+    //scalarViscosity true;
+    //nu nu [ 0 2 -1 0 0 0 0 ] 0.000025;
+}
+ArchimedesProps
+{
+    gravityFieldName "g";
+}
+gradPForceProps
+{
+    pFieldName "p";
+    voidfractionFieldName "voidfraction";
+    velocityFieldName "U";
+    interpolation true;
+}
+
+viscForceProps
+{
+    velocityFieldName "U";
+    interpolation true;
+}
+volWeightedAverageProps
+{
+    scalarFieldNames
+    (
+        voidfraction
+    );
+    vectorFieldNames
+    (
+    );
+    upperThreshold 0.999;
+    lowerThreshold 0;
+    verbose true;
+}
+totalMomentumExchangeProps
+{
+    implicitMomExFieldName "Ksl";
+    explicitMomExFieldName "none";
+    fluidVelFieldName "U";
+    granVelFieldName "Us";
+}
+GidaspowDragProps
+{
+    //verbose true;
+    velFieldName "U";
+    voidfractionFieldName "voidfraction";
+    granVelFieldName "Us";
+    interpolation true;
+    phi 1;
+}
+DEMbasedDragProps
+{
+    velFieldName "U";
+    voidfractionFieldName "voidfraction";
+}
+
+DiFeliceDragProps
+{
+    //verbose true;
+    velFieldName "U";
+    voidfractionFieldName "voidfraction";
+    granVelFieldName "Us";
+    interpolation true;
+}
+
+KochHillDragProps
+{
+    //verbose true;
+    velFieldName "U";
+    voidfractionFieldName "voidfraction";
+    interpolation true;
+    //forceSubModels
+    //(
+    //    ImExCorr
+    //);
+    implForceDEM true;
+    //implForceDEMaccumulated true;
+    //explicitCorr true;
+}
+
+BeetstraDragProps
+{
+    velFieldName "U";
+    gravityFieldName "g";
+    rhoParticle     2000.;
+    voidfractionFieldName "voidfraction";
+    interpolation true;
+    useFilteredDragModel ;
+    useParcelSizeDependentFilteredDrag ;
+    k       0.05;
+    aLimit  0.0;
+//    verbose true;
+}
+
+RongDragProps
+{
+    verbose true;
+    velFieldName "U";
+    voidfractionFieldName "voidfraction";
+    interpolation true;
+    implForceDEM true;
+    implForceDEMaccumulated true;
+    granVelFieldName "Us";
+}
+
+virtualMassForceProps
+{
+    velFieldName "U";
+}
+
+particleCellVolumeProps
+{
+    upperThreshold 0.999;
+    lowerThreshold 0.;
+    verbose true;
+}
+
+fieldStoreProps
+{
+    scalarFieldNames
+    (
+    );
+
+    vectorFieldNames
+    (
+        "U"
+    );
+}
+
+fieldVolWeightedProps
+{
+    startTime 0;
+
+    scalarFieldNames
+    (
+    );
+
+    vectorFieldNames
+    (
+        "U"
+    );
+    useVolumeFraction true;
+    volumeFractionName "voidfraction";
+}
+
+oneWayVTKProps
+{
+    couplingFilename "vtk_out%4.4d.vtk";
+    maxNumberOfParticles 30000;
+}
+
+twoWayFilesProps
+{
+    maxNumberOfParticles 10100;
+}
+
+centreProps
+{
+    alphaMin 0.1;
+}
+
+engineProps
+{
+    treeSearch true;
+}
+
+dividedProps
+{
+    alphaMin 0.1;
+	//interpolatoin;
+    scaleUpVol 1.0;
+	//verbose;
+}
+PBCGFiMPIProps
+{
+    alphaMin 0.1;
+	//interpolatoin;
+    scaleUpVol 1.0;
+	//verbose;
+}
+localPSizeDiffSmoothingProps
+{
+    lowerLimit 0.1;
+    upperLimit 1e10;
+    dSmoothingLength 1.5e-3;
+    Csmoothing    1.0; 
+}
+
+constDiffSmoothingProps
+{
+    lowerLimit 0.1;
+    upperLimit 1e10;
+    smoothingLength 1.5e-3;
+}
+twoWayMPIProps
+{
+    liggghtsPath "../DEM/in.flow";
+}
+// ************************************************************************* //

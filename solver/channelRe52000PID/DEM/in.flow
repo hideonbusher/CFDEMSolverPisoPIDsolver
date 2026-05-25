@@ -1,0 +1,86 @@
+echo both
+#-------------Liu--------------------
+variable dp equal 0.00355
+variable rp equal v_dp/2
+# general setup
+
+atom_style	granular
+atom_modify	map array sort 0 0
+communicate	single vel yes
+
+boundary	p p m
+newton		off
+units		si
+
+#processors	2 1 1
+
+neighbor	0.000001 bin				
+neigh_modify	delay 0
+read_restart ../DEM/restart/restart.sample
+timestep	1e-5          #####==
+
+
+#fix		gravi all gravity 10 vector 0.04711 0 -0.9989 #1.5degree
+
+# material properties required for new pair styles
+fix 	m1 all property/global youngsModulus peratomtype 5e6 5e6 5e6 5e6 1e9  #type 1-Ep 2-Eb 3-Ew in order
+fix 	m2 all property/global poissonsRatio peratomtype 0.24 0.24 0.24 0.24 0.24
+fix 	m3 all property/global coefficientRestitution peratomtypepair 5 &
+		0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8   
+fix 	m4 all property/global coefficientFriction peratomtypepair 5 &
+		0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4    
+fix 	m5 all property/global coefficientRollingFriction peratomtypepair 5 &
+		0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 
+#LIGGGHTS_help fix id all property/global coefficientRestitution peratomtypepair n_atomtypes value_11 value_12 13 14.. value_21 value_22 ..23 24.... 
+# pair style
+pair_style 	gran model hertz tangential history #rolling_friction cdt
+pair_coeff	* *
+
+# walls
+#fix	xgate1 all wall/gran model hertz tangential history primitive type 5 xplane 0 
+#fix	xgate2 all wall/gran model hertz tangential history primitive type 5 xplane 0.0069
+fix	ygate1 all wall/gran model hertz tangential history primitive type 5 yplane 0 
+fix	ygate2 all wall/gran model hertz tangential history primitive type 5 yplane 0.088
+fix	zgate1 all wall/gran model hertz tangential history primitive type 5 zplane 0
+#fix	zgate2 all wall/gran model hertz tangential history primitive type 4 zplane 0.0032 
+
+#fix	glue base move linear 0 0 0 units boxs
+# apply nve integration to all particles that are inserted
+#run 0
+#region dels block 0 0.0138 0 0.0069 0.01725 0.15 units box  #0.02415
+#delete_atoms region dels
+group           base type 1
+fix	glue base move linear 0 0 0 units box
+# cfd coupling
+fix     	cfd all couple/cfd couple_every 10 mpi
+fix     	cfd2 all couple/cfd/force
+
+# try adapt radial expansion
+#variable vvvdiameter equal ramp(0.00008,0.00016)
+#fix adapt1 flow adapt 100 atom diameter v_vvvdiameter reset no
+
+# integr nve
+
+# screen output
+
+
+
+thermo_style	custom step atoms ke 
+thermo		100000
+thermo_modify	lost ignore norm no
+# compute_modify	thermo_temp dynamic yes
+
+# dump output
+dump	dump1 base custom 100000 postflow/dump.flowbase id type x y z radius
+
+#run		500000
+#run		${cyclestep}
+
+# main run
+#compute 	co flow contact/atom	
+#dump		dum flow custom ${writestep} ../DEM/post/dump.sediment id type x y z radius vx vy vz c_co
+ 
+reset_timestep	0
+run 		0
+# restart
+write_restart   restart/restart.flow

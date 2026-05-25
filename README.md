@@ -1,4 +1,4 @@
-This repository provides a modified cfdemSolverPiso based on the open-source CFDEMcoupling framework.
+This repository provides a modified cfdemSolverPisoPIDsolver based on the open-source CFDEMcoupling framework.
 
 The solver introduces a PID-controlled streamwise body force (actually the acceleration [m/s^2] in the solver) to maintain a target flow discharge in periodic CFD-DEM simulations. 
 

@@ -1,0 +1,8 @@
+Files in this folder indicate the force on the particle, and the momentum exchange scheme to the VANS.
+
+Meiliftforce has been modified on the official version to more faithfully reflect the formulas in the original paper.
+
+The processor and cyclic boundary treatment and topology acceleration can be enabled in the CFD/constant/couplingproperties file.
+
+
+

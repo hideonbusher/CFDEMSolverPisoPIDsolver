@@ -1,0 +1,7 @@
+The coefficient of P/I/D can be modified in CFD/system/controldict
+
+Before running the tutorial, the configuration should be updated using the provided ./updateConfig script (tell the solver where to capture the Qf and other settings for the CG algorithm).
+
+Obviously, the updateConfig step can be avoided in subsequent work and automated in the solver, which will be released later.
+
+

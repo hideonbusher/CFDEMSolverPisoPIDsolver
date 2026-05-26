@@ -6,3 +6,6 @@ Before running the tutorial, the configuration should be updated using the provi
 Obviously, the updateConfig step can be avoided in subsequent work and automated in the solver, which will be released later.
 
 
+This PID solver adopts the semi-implicit scheme for the momentum exchange term for the proposed CG method, while the explicit solver adopts the explicit scheme for the momentum exchange, which should be compiled with the diffusion-based method
+
+
